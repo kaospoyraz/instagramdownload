@@ -9,7 +9,7 @@ BOT_TOKEN = "burya bot tokeninizi girin"
 # 2. Kullanıcıların katılması gereken kanal/grup
 #    Örnek: -1001234567890  (kanal için başında - işareti olmalı)
 #    Bulmak için: @userinfobot'a kanalı ekle ve ID'yi al
-REQUIRED_CHANNEL_ID =--kanalinizin idni girin
+REQUIRED_CHANNEL_ID =-1001234567890
 
 # 3. Kanalın kullanıcı adı (@ ile birlikte)
 REQUIRED_CHANNEL_USERNAME = "@skullanici adi "
