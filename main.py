@@ -3,7 +3,11 @@ import re
 import asyncio
 import logging
 import yt_dlp
+import shutil   # ✅ EKLENDİ
 from pathlib import Path
+
+# 🔥 FFmpeg kontrol (Render logunda görürsün)
+print("FFMPEG:", shutil.which("ffmpeg"))
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
