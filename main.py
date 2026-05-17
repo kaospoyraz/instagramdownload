@@ -2,7 +2,7 @@ import os import re import asyncio import logging import yt_dlp from pathlib imp
 
 logging.basicConfig( format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO, handlers=[ logging.FileHandler("bot.log"), logging.StreamHandler() ] ) logger = logging.getLogger(name)
 
-─── Platform Detection ────────────────────────────────────────────────
+#─── Platform Detection ────────────────────────────────────────────────
 
 PLATFORM_PATTERNS = { "tiktok": r"(tiktok.com|vm.tiktok.com)", "instagram": r"(instagram.com|instagr.am)", "youtube": r"(youtube.com|youtu.be)", "pinterest": r"(pinterest.(com|ca|co.uk|fr|de|es|it)|pin.it)", "twitter": r"(twitter.com|x.com|t.co)", }
 
@@ -10,13 +10,13 @@ def detect_platform(url: str): for k, v in PLATFORM_PATTERNS.items(): if re.sear
 
 def extract_url(text: str): match = re.search(r"https?://[^\s]+", text) return match.group(0) if match else None
 
-─── Membership ────────────────────────────────────────────────
+#─── Membership ────────────────────────────────────────────────
 
 async def check_membership(user_id: int, context: ContextTypes.DEFAULT_TYPE): try: member = await context.bot.get_chat_member( chat_id=REQUIRED_CHANNEL_ID, user_id=user_id ) return member.status in ["member", "administrator", "creator"] except Exception as e: logger.error(f"membership error: {e}") return False
 
 def membership_keyboard(): return InlineKeyboardMarkup([ [InlineKeyboardButton( f"📢 Kanal Katıl", url=f"https://t.me/{REQUIRED_CHANNEL_USERNAME.lstrip('@')}" )], [InlineKeyboardButton("✅ Kontrol Et", callback_data="check")] ])
 
-─── YT-DLP CORE ────────────────────────────────────────────────
+#─── YT-DLP CORE ────────────────────────────────────────────────
 
 def run_ydl(url, opts): with yt_dlp.YoutubeDL(opts) as ydl: info = ydl.extract_info(url, download=True) filename = ydl.prepare_filename(info) return filename, info
 
@@ -36,7 +36,7 @@ try:
 except Exception as e:
     return None, str(e)
 
-─── HANDLERS ────────────────────────────────────────────────
+#─── HANDLERS ────────────────────────────────────────────────
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE): await update.message.reply_text( "🎬 Media Downloader Bot\nLink gönder indiriyim" )
 
@@ -107,7 +107,7 @@ else:
 
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE): if update.effective_user.id not in ADMIN_IDS: return await update.message.reply_text("📊 Stats yakında")
 
-─── MAIN ────────────────────────────────────────────────
+#─── MAIN ────────────────────────────────────────────────
 
 def main(): Path(DOWNLOAD_DIR).mkdir(exist_ok=True)
 
