@@ -73,6 +73,29 @@ def join_keyboard():
 
 
 # ───────── YT-DLP CORE (MP3 DAHİL) ─────────
+def base_opts(output, audio=False):
+    opts = {
+        "outtmpl": output,
+        "quiet": True,
+        "no_warnings": True,
+    }
+
+    if audio:
+        opts["format"] = "bestaudio/best"
+        opts["postprocessors"] = [{
+            "key": "FFmpegExtractAudio",
+            "preferredcodec": "mp3",
+            "preferredquality": "192",
+        }]
+    else:
+        opts["format"] = "bestvideo+bestaudio/best"
+
+    if os.path.exists("cookies.txt"):
+        opts["cookiefile"] = "cookies.txt"
+
+    return opts
+
+
 
 def run_ydl(url, opts):
     with yt_dlp.YoutubeDL(opts) as ydl:
