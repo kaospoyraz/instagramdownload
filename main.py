@@ -6,8 +6,6 @@ import yt_dlp
 import shutil
 from pathlib import Path
 
-print("FFMPEG:", shutil.which("ffmpeg"))
-
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application,
@@ -27,6 +25,9 @@ from config import (
 )
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+print("FFMPEG:", shutil.which("ffmpeg"))
 
 # ───────── PLATFORM ─────────
 
@@ -74,6 +75,12 @@ def join_keyboard():
 
 # ───────── YT-DLP CORE ─────────
 
+def run_ydl(url, opts):
+    with yt_dlp.YoutubeDL(opts) as ydl:
+        info = ydl.extract_info(url, download=True)
+        return ydl.prepare_filename(info), info
+
+
 def base_opts(output, audio=False):
     opts = {
         "outtmpl": output,
@@ -97,12 +104,6 @@ def base_opts(output, audio=False):
     return opts
 
 
-def run_ydl(url, opts):
-    with yt_dlp.YoutubeDL(opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-        return ydl.prepare_filename(info), info
-
-
 async def download(url, platform, audio=False):
     Path(DOWNLOAD_DIR).mkdir(exist_ok=True)
     output = f"{DOWNLOAD_DIR}/%(id)s.%(ext)s"
@@ -116,27 +117,29 @@ async def download(url, platform, audio=False):
         return None, str(e)
 
 
-# ───────── START ─────────
+# ───────── BOT HANDLERS ─────────
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
 
     if not await check_membership(user.id, context):
         await update.message.reply_text(
-            "🔒 Kanalımıza katılman gerekiyor!",
+            "🔒 Bu botu kullanmak için kanalımıza katılman gerekiyor!",
             reply_markup=join_keyboard()
         )
         return
 
     await update.message.reply_text(
-        f"""👋 Merhaba {user.first_name}
+        f"""👋 Merhaba {user.first_name}!
 
-Sadece link gönder.
-MP3 için: mp3 https://..."""
+🎬 Sosyal Medya İndirici Bot
+
+📥 Kullanım:
+Link gönder yeter.
+MP3 için: mp3 https://...
+"""
     )
 
-
-# ───────── MESSAGE HANDLER ─────────
 
 async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -169,8 +172,10 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     filepath, title = await download(url, platform, audio)
 
     if not filepath or not os.path.exists(filepath):
-        await msg.edit_text("❌ Hata")
+        await msg.edit_text(f"❌ Hata: {title}")
         return
+
+    await msg.edit_text("📤 Yükleniyor...")
 
     try:
         with open(filepath, "rb") as f:
@@ -181,17 +186,12 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await msg.delete()
 
-    except Exception as e:
-        await msg.edit_text(f"❌ Upload error: {e}")
-
     finally:
         try:
             os.remove(filepath)
         except:
             pass
 
-
-# ───────── CALLBACK ─────────
 
 async def check_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
@@ -215,7 +215,7 @@ def main():
     app.add_handler(CallbackQueryHandler(check_callback, pattern="check"))
 
     print("Bot çalışıyor...")
-    app.run_polling(drop_pending_updates=True)
+    app.run_polling()
 
 
 if __name__ == "__main__":
