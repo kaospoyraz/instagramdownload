@@ -247,5 +247,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-import shutil
-print("FFMPEG:", shutil.which("ffmpeg"))
