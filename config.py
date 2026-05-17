@@ -4,15 +4,15 @@
 # ══════════════════════════════════════════════
 
 # 1. BotFather'dan aldığın token
-BOT_TOKEN = "8854474333:AAGlq0tTDsd8nzbnkt0BJKwRu0FYHSGF42M"
+BOT_TOKEN = "burya bot tokeninizi girin"
 
 # 2. Kullanıcıların katılması gereken kanal/grup
 #    Örnek: -1001234567890  (kanal için başında - işareti olmalı)
 #    Bulmak için: @userinfobot'a kanalı ekle ve ID'yi al
-REQUIRED_CHANNEL_ID =-1003904677699
+REQUIRED_CHANNEL_ID =--kanalinizin idni girin
 
 # 3. Kanalın kullanıcı adı (@ ile birlikte)
-REQUIRED_CHANNEL_USERNAME = "@sosyalindirme"
+REQUIRED_CHANNEL_USERNAME = "@skullanici adi ""
 
 # 4. İndirilen dosyaların kaydedileceği klasör
 DOWNLOAD_DIR = "downloads"
