@@ -10,9 +10,9 @@ from telegram.ext import (
     Application,
     CommandHandler,
     MessageHandler,
-    filters,
+    CallbackQueryHandler,
     ContextTypes,
-    CallbackQueryHandler
+    filters
 )
 
 from config import (
@@ -23,85 +23,65 @@ from config import (
     ADMIN_IDS
 )
 
-# ─── Logging ────────────────────────────────────────────────
-
+# ───────────────── LOG ─────────────────
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
-    handlers=[
-        logging.FileHandler("bot.log"),
-        logging.StreamHandler()
-    ]
+    format="%(asctime)s - %(levelname)s - %(message)s"
 )
-
 logger = logging.getLogger(__name__)
 
-# ─── Platform Detection ────────────────────────────────────────────────
-
-PLATFORM_PATTERNS = {
-    "tiktok": r"(tiktok\.com|vm\.tiktok\.com)",
-    "instagram": r"(instagram\.com|instagr\.am)",
-    "youtube": r"(youtube\.com|youtu\.be)",
-    "pinterest": r"(pinterest\.(com|ca|co\.uk|fr|de|es|it)|pin\.it)",
-    "twitter": r"(twitter\.com|x\.com|t\.co)",
+# ───────────────── PLATFORM ─────────────────
+PLATFORMS = {
+    "tiktok": r"tiktok\.com",
+    "instagram": r"instagram\.com",
+    "youtube": r"youtube\.com|youtu\.be",
+    "pinterest": r"pinterest\.com|pin\.it",
+    "twitter": r"twitter\.com|x\.com"
 }
 
-
-def detect_platform(url: str):
-    for k, v in PLATFORM_PATTERNS.items():
-        if re.search(v, url, re.IGNORECASE):
+def detect_platform(url):
+    for k, v in PLATFORMS.items():
+        if re.search(v, url):
             return k
     return None
 
+def extract_url(text):
+    m = re.search(r"https?://\S+", text)
+    return m.group(0) if m else None
 
-def extract_url(text: str):
-    match = re.search(r"https?://[^\s]+", text)
-    return match.group(0) if match else None
-
-
-# ─── Membership ────────────────────────────────────────────────
-
-async def check_membership(user_id: int, context: ContextTypes.DEFAULT_TYPE):
+# ───────────────── MEMBERSHIP ─────────────────
+async def check_membership(user_id, context):
     try:
         member = await context.bot.get_chat_member(
             chat_id=REQUIRED_CHANNEL_ID,
             user_id=user_id
         )
         return member.status in ["member", "administrator", "creator"]
-    except Exception as e:
-        logger.error(f"membership error: {e}")
+    except:
         return False
 
-
-def membership_keyboard():
+def keyboard():
     return InlineKeyboardMarkup([
-        [
-            InlineKeyboardButton(
-                f"📢 Kanal Katıl",
-                url=f"https://t.me/{REQUIRED_CHANNEL_USERNAME.lstrip('@')}"
-            )
-        ],
-        [
-            InlineKeyboardButton("✅ Kontrol Et", callback_data="check")
-        ]
+        [InlineKeyboardButton(
+            "📢 Kanal",
+            url=f"https://t.me/{REQUIRED_CHANNEL_USERNAME.lstrip('@')}"
+        )],
+        [InlineKeyboardButton("✅ Kontrol", callback_data="check")]
     ])
 
-
-# ─── YT-DLP CORE ────────────────────────────────────────────────
+# ───────────────── YT-DLP ENGINE ─────────────────
 
 def run_ydl(url, opts):
     with yt_dlp.YoutubeDL(opts) as ydl:
         info = ydl.extract_info(url, download=True)
-        filename = ydl.prepare_filename(info)
-        return filename, info
+        return ydl.prepare_filename(info), info
 
-
-def base_opts(output, audio=False):
+def base_opts(output):
     opts = {
         "outtmpl": output,
         "quiet": True,
         "no_warnings": True,
-        "format": "bestaudio/best" if audio else "best"
+        "format": "best"
     }
 
     if os.path.exists("cookies.txt"):
@@ -109,53 +89,55 @@ def base_opts(output, audio=False):
 
     return opts
 
+def ig_opts(output):
+    opts = base_opts(output)
+    opts["http_headers"] = {
+        "User-Agent": "Mozilla/5.0",
+        "Referer": "https://www.instagram.com/"
+    }
+    return opts
 
-async def download_url(url: str, audio_only: bool = False):
+def pin_opts(output):
+    opts = base_opts(output)
+    opts["http_headers"] = {
+        "User-Agent": "Mozilla/5.0"
+    }
+    return opts
+
+async def download(url, platform):
     Path(DOWNLOAD_DIR).mkdir(exist_ok=True)
-
     output = f"{DOWNLOAD_DIR}/%(id)s.%(ext)s"
-    opts = base_opts(output, audio_only)
+
+    if platform == "instagram":
+        opts = ig_opts(output)
+    elif platform == "pinterest":
+        opts = pin_opts(output)
+    else:
+        opts = base_opts(output)
 
     try:
         filename, info = await asyncio.to_thread(run_ydl, url, opts)
-        title = info.get("title", "video")
-        return filename, title
+        return filename, info.get("title", "video")
     except Exception as e:
         return None, str(e)
 
-
-# ─── HANDLERS ────────────────────────────────────────────────
+# ───────────────── HANDLERS ─────────────────
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🎬 Media Downloader Bot\nLink gönder indiriyim"
+        "🎬 Media Bot\nLink gönder indiriyim"
     )
 
-
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "📌 Desteklenen: TikTok, Instagram, YouTube, Pinterest, X\n"
-        "📥 Link gönder yeter"
-    )
-
-
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     text = update.message.text
 
-    # membership check
     if not await check_membership(user_id, context):
         await update.message.reply_text(
-            "🔒 Kanala katılmadan kullanamazsın",
-            reply_markup=membership_keyboard()
+            "🔒 Kanala katıl",
+            reply_markup=keyboard()
         )
         return
-
-    # mp3 mode
-    audio_only = False
-    if text.lower().startswith("mp3 "):
-        audio_only = True
-        text = text[4:].strip()
 
     url = extract_url(text)
     if not url:
@@ -167,29 +149,29 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Desteklenmiyor")
         return
 
-    status = await update.message.reply_text("⏳ İndiriliyor...")
+    msg = await update.message.reply_text("⏳ İndiriliyor...")
 
-    filepath, title = await download_url(url, audio_only)
+    filepath, title = await download(url, platform)
 
     if not filepath or not os.path.exists(filepath):
-        await status.edit_text(f"❌ Hata: {title}")
+        await msg.edit_text(f"❌ Hata: {title}")
         return
 
-    await status.edit_text("📤 Yükleniyor...")
+    await msg.edit_text("📤 Yükleniyor...")
 
     try:
         with open(filepath, "rb") as f:
-            if audio_only:
+            if filepath.endswith((".mp3",)):
                 await update.message.reply_audio(audio=f, title=title[:64])
             elif filepath.endswith((".jpg", ".png", ".webp")):
                 await update.message.reply_photo(photo=f, caption=title[:100])
             else:
                 await update.message.reply_video(video=f, caption=title[:100])
 
-        await status.delete()
+        await msg.delete()
 
     except Exception as e:
-        await status.edit_text(f"❌ Upload error: {e}")
+        await msg.edit_text(f"❌ Upload error: {e}")
 
     finally:
         try:
@@ -197,8 +179,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             pass
 
-
-async def check_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def check_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
 
@@ -207,15 +188,7 @@ async def check_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await q.answer("❌ Katılmadın", show_alert=True)
 
-
-async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id not in ADMIN_IDS:
-        return
-
-    await update.message.reply_text("📊 Stats yakında")
-
-
-# ─── MAIN ────────────────────────────────────────────────
+# ───────────────── MAIN ─────────────────
 
 def main():
     Path(DOWNLOAD_DIR).mkdir(exist_ok=True)
@@ -223,14 +196,11 @@ def main():
     app = Application.builder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(CommandHandler("stats", stats))
-    app.add_handler(CallbackQueryHandler(check_callback, pattern="check"))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle))
+    app.add_handler(CallbackQueryHandler(check_cb, pattern="check"))
 
-    logger.info("Bot running...")
+    logger.info("Bot started")
     app.run_polling(drop_pending_updates=True)
-
 
 if __name__ == "__main__":
     main()
