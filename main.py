@@ -92,41 +92,6 @@ def base_opts(output, audio=False):
 
     if os.path.exists("cookies.txt"):
         opts["cookiefile"] = "cookies.txt"
-
-    return opts
-
-
-
-def run_ydl(url, opts):
-    with yt_dlp.YoutubeDL(opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-        return ydl.prepare_filename(info), info
-
-
-def base_opts(output, audio=False):
-    opts = {
-        "outtmpl": output,
-        "quiet": True,
-        "no_warnings": True,
-    }
-
-    if audio:
-        opts["format"] = "bestaudio/best"
-        opts["postprocessors"] = [{
-            "key": "FFmpegExtractAudio",
-            "preferredcodec": "mp3",
-            "preferredquality": "192",
-        }]
-    else:
-        opts["format"] = "bestvideo+bestaudio/best"
-
-    if os.path.exists("cookies.txt"):
-        opts["cookiefile"] = "cookies.txt"
-
-    return opts
-
-    if audio:
-async def download(url, platform, audio=False):
     Path(DOWNLOAD_DIR).mkdir(exist_ok=True)
     output = f"{DOWNLOAD_DIR}/%(id)s.%(ext)s"
 
