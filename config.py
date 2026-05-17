@@ -1,21 +1,10 @@
-# ══════════════════════════════════════════════
-#   BOT AYARLARI - config.py
-#   Aşağıdaki değerleri kendi bilgilerinle doldur
-# ══════════════════════════════════════════════
+import os
 
-# 1. BotFather'dan aldığın token
-BOT_TOKEN = "BURAYA_YENI_TOKEN"
-# 2. Kullanıcıların katılması gereken kanal/grup
-#    Örnek: -1001234567890  (kanal için başında - işareti olmalı)
-#    Bulmak için: @userinfobot'a kanalı ekle ve ID'yi al
-REQUIRED_CHANNEL_ID = -1001234567890
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-# 3. Kanalın kullanıcı adı (@ ile birlikte)
-REQUIRED_CHANNEL_USERNAME = "@kanaladi"
+REQUIRED_CHANNEL_ID = int(os.getenv("REQUIRED_CHANNEL_ID"))
+REQUIRED_CHANNEL_USERNAME = os.getenv("REQUIRED_CHANNEL_USERNAME")
 
-# 4. İndirilen dosyaların kaydedileceği klasör
-DOWNLOAD_DIR = "downloads"
+DOWNLOAD_DIR = os.getenv("DOWNLOAD_DIR", "downloads")
 
-# 5. Admin kullanıcı ID'leri (virgülle ayır)
-#    Telegram ID'ni bulmak için @userinfobot'a yaz
-ADMIN_IDS = [7856123923]
+ADMIN_IDS = list(map(int, os.getenv("ADMIN_IDS", "").split(",")))
