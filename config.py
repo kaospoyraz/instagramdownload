@@ -12,7 +12,7 @@ BOT_TOKEN = "8854474333:AAGlq0tTDsd8nzbnkt0BJKwRu0FYHSGF42M"
 REQUIRED_CHANNEL_ID =-1003904677699
 
 # 3. Kanalın kullanıcı adı (@ ile birlikte)
-REQUIRED_CHANNEL_USERNAME = "https://t.me/+iBi_PY0cPnoyNjc0"
+REQUIRED_CHANNEL_USERNAME = "@sosyalindirme"
 
 # 4. İndirilen dosyaların kaydedileceği klasör
 DOWNLOAD_DIR = "downloads"
