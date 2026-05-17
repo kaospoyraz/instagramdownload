@@ -81,8 +81,19 @@ def base_opts(output, audio=False):
         "outtmpl": output,
         "quiet": True,
         "no_warnings": True,
-        "format": "bestaudio/best" if audio else "best"
     }
+
+    if audio:
+        opts["format"] = "bestaudio/best"
+        opts["postprocessors"] = [{
+            "key": "FFmpegExtractAudio",
+            "preferredcodec": "mp3",
+            "preferredquality": "192",
+        }]
+    else:
+        opts["format"] = "bestvideo+bestaudio/best"
+
+    return opts
 
     # MP3 CONVERT
     if audio:
