@@ -4,7 +4,7 @@
 # ══════════════════════════════════════════════
 
 # 1. BotFather'dan aldığın token
-BOT_TOKEN = "burya bot tokeninizi girin"
+BOT_TOKEN = "8854474333:ppglq0tTDsd8nzbnkt0BJKwRu0FYHSdjska3"
 
 # 2. Kullanıcıların katılması gereken kanal/grup
 #    Örnek: -1001234567890  (kanal için başında - işareti olmalı)
