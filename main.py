@@ -99,10 +99,6 @@ def base_opts(output, audio=False):
 
     if os.path.exists("cookies.txt"):
         opts["cookiefile"] = "cookies.txt"
-
-    return opts
-    # MP3 CONVERT
-    if audio:
         opts["postprocessors"] = [{
             "key": "FFmpegExtractAudio",
             "preferredcodec": "mp3",
