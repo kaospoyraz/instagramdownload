@@ -93,8 +93,10 @@ def base_opts(output, audio=False):
     else:
         opts["format"] = "bestvideo+bestaudio/best"
 
-    return opts
+    if os.path.exists("cookies.txt"):
+        opts["cookiefile"] = "cookies.txt"
 
+    return opts
     # MP3 CONVERT
     if audio:
         opts["postprocessors"] = [{
