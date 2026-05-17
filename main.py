@@ -99,18 +99,10 @@ def base_opts(output, audio=False):
 
     if os.path.exists("cookies.txt"):
         opts["cookiefile"] = "cookies.txt"
-        opts["postprocessors"] = [{
-            "key": "FFmpegExtractAudio",
-            "preferredcodec": "mp3",
-            "preferredquality": "192",
-        }]
-
-    if os.path.exists("cookies.txt"):
-        opts["cookiefile"] = "cookies.txt"
 
     return opts
 
-
+    if audio:
 async def download(url, platform, audio=False):
     Path(DOWNLOAD_DIR).mkdir(exist_ok=True)
     output = f"{DOWNLOAD_DIR}/%(id)s.%(ext)s"
