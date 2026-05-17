@@ -12,7 +12,7 @@ BOT_TOKEN = "burya bot tokeninizi girin"
 REQUIRED_CHANNEL_ID =--kanalinizin idni girin
 
 # 3. Kanalın kullanıcı adı (@ ile birlikte)
-REQUIRED_CHANNEL_USERNAME = "@skullanici adi ""
+REQUIRED_CHANNEL_USERNAME = "@skullanici adi "
 
 # 4. İndirilen dosyaların kaydedileceği klasör
 DOWNLOAD_DIR = "downloads"
