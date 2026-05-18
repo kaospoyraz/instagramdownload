@@ -29,18 +29,11 @@ logger = logging.getLogger(__name__)
 import shutil
 print("FFMPEG:", shutil.which("ffmpeg"))
 
-# ───────── PLATFORM ─────────
-
-PLATFORMS = {
-    "tiktok": r"tiktok\.com|vm\.tiktok\.com",
-    "instagram": r"instagram\.com",
-    "youtube": r"youtube\.com|youtu\.be",
-    "twitter": r"x\.com|twitter\.com"
-}
+# ───────── URL ─────────
 
 def extract_url(text):
-    m = re.search(r"https?://\S+", text)
-    return m.group(0) if m else None
+    match = re.search(r"https?://\S+", text)
+    return match.group(0) if match else None
 
 
 # ───────── MEMBERSHIP ─────────
@@ -66,22 +59,14 @@ def join_keyboard():
     ])
 
 
-# ───────── YT-DLP CORE ─────────
+# ───────── YT-DLP ─────────
 
 def run_ydl(url, opts):
-    try:
-        with yt_dlp.YoutubeDL(opts) as ydl:
-            print("🔥 YTDLP START:", url)
-
-            info = ydl.extract_info(url, download=True)
-
-            print("✅ YTDLP DONE")
-
-            return ydl.prepare_filename(info), info
-
-    except Exception as e:
-        print("❌ YTDLP ERROR:", repr(e))
-        raise
+    with yt_dlp.YoutubeDL(opts) as ydl:
+        print("🔥 DOWNLOAD START:", url)
+        info = ydl.extract_info(url, download=True)
+        print("✅ DOWNLOAD DONE")
+        return ydl.prepare_filename(info), info
 
 
 def base_opts(output, audio=False):
@@ -100,7 +85,7 @@ def base_opts(output, audio=False):
             "preferredquality": "192",
         }]
     else:
-        opts["format"] = "bv*+ba/b"   # 🔥 FIXED FORMAT
+        opts["format"] = "bv*+ba/b"
 
     if os.path.exists("cookies.txt"):
         opts["cookiefile"] = "cookies.txt"
@@ -112,7 +97,6 @@ async def download(url, audio=False):
     Path(DOWNLOAD_DIR).mkdir(exist_ok=True)
 
     output = str(Path(DOWNLOAD_DIR) / "%(id)s.%(ext)s")
-
     opts = base_opts(output, audio)
 
     try:
@@ -120,6 +104,7 @@ async def download(url, audio=False):
         return filename, info.get("title", "video")
 
     except Exception as e:
+        print("❌ DOWNLOAD ERROR:", repr(e))
         return None, str(e)
 
 
@@ -156,7 +141,7 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     filepath, title = await download(url, audio)
 
-    if not filepath:
+    if not filepath or not os.path.exists(filepath):
         await msg.edit_text(f"❌ Hata: {title}")
         return
 
@@ -172,7 +157,7 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await msg.delete()
 
     except Exception as e:
-        await msg.edit_text(f"❌ Gönderim hatası: {e}")
+        await msg.edit_text(f"❌ Upload hata: {e}")
 
     finally:
         try:
@@ -185,7 +170,7 @@ async def check_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
 
-    await q.edit_message_text("✅ OK")
+    await q.edit_message_text("✅ Sistem aktif")
 
 
 # ───────── MAIN ─────────
