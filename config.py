@@ -7,4 +7,9 @@ REQUIRED_CHANNEL_USERNAME = os.getenv("REQUIRED_CHANNEL_USERNAME")
 
 DOWNLOAD_DIR = os.getenv("DOWNLOAD_DIR", "downloads")
 
-ADMIN_IDS = list(map(int, os.getenv("ADMIN_IDS", "").split(",")))
+
+admins = os.getenv("ADMIN_IDS", "")
+
+ADMIN_IDS = [
+    int(x) for x in admins.split(",") if x.strip()
+]
