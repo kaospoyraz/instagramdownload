@@ -20,11 +20,14 @@ from config import (
     REQUIRED_CHANNEL_ID,
     REQUIRED_CHANNEL_USERNAME,
     DOWNLOAD_DIR,
-    ADMIN_IDS
 )
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# ───────── DEBUG ─────────
+import shutil
+print("FFMPEG:", shutil.which("ffmpeg"))
 
 # ───────── PLATFORM ─────────
 
@@ -32,16 +35,8 @@ PLATFORMS = {
     "tiktok": r"tiktok\.com|vm\.tiktok\.com",
     "instagram": r"instagram\.com",
     "youtube": r"youtube\.com|youtu\.be",
-    "pinterest": r"pinterest\.com|pin\.it",
     "twitter": r"x\.com|twitter\.com"
 }
-
-def detect_platform(url):
-    for k, v in PLATFORMS.items():
-        if re.search(v, url):
-            return k
-    return "unknown"
-
 
 def extract_url(text):
     m = re.search(r"https?://\S+", text)
@@ -74,9 +69,19 @@ def join_keyboard():
 # ───────── YT-DLP CORE ─────────
 
 def run_ydl(url, opts):
-    with yt_dlp.YoutubeDL(opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-        return ydl.prepare_filename(info), info
+    try:
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            print("🔥 YTDLP START:", url)
+
+            info = ydl.extract_info(url, download=True)
+
+            print("✅ YTDLP DONE")
+
+            return ydl.prepare_filename(info), info
+
+    except Exception as e:
+        print("❌ YTDLP ERROR:", repr(e))
+        raise
 
 
 def base_opts(output, audio=False):
@@ -95,7 +100,7 @@ def base_opts(output, audio=False):
             "preferredquality": "192",
         }]
     else:
-        opts["format"] = "best"
+        opts["format"] = "bv*+ba/b"   # 🔥 FIXED FORMAT
 
     if os.path.exists("cookies.txt"):
         opts["cookiefile"] = "cookies.txt"
@@ -106,12 +111,14 @@ def base_opts(output, audio=False):
 async def download(url, audio=False):
     Path(DOWNLOAD_DIR).mkdir(exist_ok=True)
 
-    output = f"{DOWNLOAD_DIR}/%(id)s.%(ext)s"
+    output = str(Path(DOWNLOAD_DIR) / "%(id)s.%(ext)s")
+
     opts = base_opts(output, audio)
 
     try:
         filename, info = await asyncio.to_thread(run_ydl, url, opts)
         return filename, info.get("title", "video")
+
     except Exception as e:
         return None, str(e)
 
@@ -121,33 +128,18 @@ async def download(url, audio=False):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
 
-    if not await check_membership(user.id, context):
-        await update.message.reply_text(
-            "🔒 Botu kullanmak için kanala katıl",
-            reply_markup=join_keyboard()
-        )
-        return
-
     await update.message.reply_text(
         f"""👋 Merhaba {user.first_name}
 
-📥 Link gönder, indireyim.
-🎵 MP3 için: mp3 link
+📥 Link gönder indiririm
+🎵 mp3 link = ses indir
 
-Destek: TikTok / YouTube / Instagram / Twitter"""
+Destek: YouTube / TikTok / Instagram / Twitter"""
     )
 
 
 async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
     text = update.message.text
-
-    if not await check_membership(user.id, context):
-        await update.message.reply_text(
-            "🔒 Önce kanala katıl",
-            reply_markup=join_keyboard()
-        )
-        return
 
     audio = False
     if text.lower().startswith("mp3 "):
@@ -155,6 +147,7 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = text[4:].strip()
 
     url = extract_url(text)
+
     if not url:
         await update.message.reply_text("❌ Link yok")
         return
@@ -178,6 +171,9 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await msg.delete()
 
+    except Exception as e:
+        await msg.edit_text(f"❌ Gönderim hatası: {e}")
+
     finally:
         try:
             os.remove(filepath)
@@ -189,10 +185,7 @@ async def check_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
 
-    if await check_membership(q.from_user.id, context):
-        await q.edit_message_text("✅ Kullanabilirsin")
-    else:
-        await q.answer("🔒 Önce kanala katıl", show_alert=True)
+    await q.edit_message_text("✅ OK")
 
 
 # ───────── MAIN ─────────
