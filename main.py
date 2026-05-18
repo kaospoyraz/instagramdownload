@@ -3,7 +3,6 @@ import re
 import asyncio
 import logging
 import yt_dlp
-import shutil
 from pathlib import Path
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -27,8 +26,6 @@ from config import (
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-print("FFMPEG:", shutil.which("ffmpeg"))
-
 # ───────── PLATFORM ─────────
 
 PLATFORMS = {
@@ -43,7 +40,8 @@ def detect_platform(url):
     for k, v in PLATFORMS.items():
         if re.search(v, url):
             return k
-    return None
+    return "unknown"
+
 
 def extract_url(text):
     m = re.search(r"https?://\S+", text)
@@ -84,8 +82,9 @@ def run_ydl(url, opts):
 def base_opts(output, audio=False):
     opts = {
         "outtmpl": output,
-        "quiet": True,
-        "no_warnings": True,
+        "quiet": False,
+        "no_warnings": False,
+        "noplaylist": True,
     }
 
     if audio:
@@ -96,7 +95,7 @@ def base_opts(output, audio=False):
             "preferredquality": "192",
         }]
     else:
-        opts["format"] = "bestvideo+bestaudio/best"
+        opts["format"] = "best"
 
     if os.path.exists("cookies.txt"):
         opts["cookiefile"] = "cookies.txt"
@@ -104,10 +103,10 @@ def base_opts(output, audio=False):
     return opts
 
 
-async def download(url, platform, audio=False):
+async def download(url, audio=False):
     Path(DOWNLOAD_DIR).mkdir(exist_ok=True)
-    output = f"{DOWNLOAD_DIR}/%(id)s.%(ext)s"
 
+    output = f"{DOWNLOAD_DIR}/%(id)s.%(ext)s"
     opts = base_opts(output, audio)
 
     try:
@@ -117,27 +116,25 @@ async def download(url, platform, audio=False):
         return None, str(e)
 
 
-# ───────── BOT HANDLERS ─────────
+# ───────── HANDLERS ─────────
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
 
     if not await check_membership(user.id, context):
         await update.message.reply_text(
-            "🔒 Bu botu kullanmak için kanalımıza katılman gerekiyor!",
+            "🔒 Botu kullanmak için kanala katıl",
             reply_markup=join_keyboard()
         )
         return
 
     await update.message.reply_text(
-        f"""👋 Merhaba {user.first_name}!
+        f"""👋 Merhaba {user.first_name}
 
-🎬 Sosyal Medya İndirici Bot
+📥 Link gönder, indireyim.
+🎵 MP3 için: mp3 link
 
-📥 Kullanım:
-Link gönder yeter.
-MP3 için: mp3 https://...
-"""
+Destek: TikTok / YouTube / Instagram / Twitter"""
     )
 
 
@@ -147,7 +144,7 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if not await check_membership(user.id, context):
         await update.message.reply_text(
-            "🔒 Kanal zorunlu",
+            "🔒 Önce kanala katıl",
             reply_markup=join_keyboard()
         )
         return
@@ -162,20 +159,15 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Link yok")
         return
 
-    platform = detect_platform(url)
-    if not platform:
-        await update.message.reply_text("❌ Desteklenmiyor")
-        return
-
     msg = await update.message.reply_text("⏳ İndiriliyor...")
 
-    filepath, title = await download(url, platform, audio)
+    filepath, title = await download(url, audio)
 
-    if not filepath or not os.path.exists(filepath):
+    if not filepath:
         await msg.edit_text(f"❌ Hata: {title}")
         return
 
-    await msg.edit_text("📤 Yükleniyor...")
+    await msg.edit_text("📤 Gönderiliyor...")
 
     try:
         with open(filepath, "rb") as f:
